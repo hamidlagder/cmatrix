@@ -1,0 +1,148 @@
+.Dd April 8, 2024
+.Dt CMATRIX 6
+.Os
+.Sh NAME
+.Nm cmatrix
+.Nd Matrix digital rain terminal screensaver
+.Sh SYNOPSIS
+.Nm
+.Op Fl \&?abBcfhklLmnorsVx
+.Op Fl C Ar color
+.Op Fl M Ar message
+.Op Fl t Ar tty
+.Op Fl u Ar delay
+.Sh DESCRIPTION
+The
+.Nm
+utility shows digital rain in a terminal.
+It supports a selection of characters, colors, rates, and speeds,
+as well as lock, interactive, and screensaver modes.
+.Pp
+The following command-line options are available:
+.Pp
+.Bl -tag -width "-M message" -compact
+.It Fl a
+Asynchronous scroll
+.It Fl b
+Bold characters on
+.It Fl B
+All bold characters, overrides
+.Fl b
+.It Fl c
+Use Japanese characters, requires appropriate font
+.It Fl C Ar color
+.Sq Ar green
+Use this
+.Ar color
+of the eight colors in the table below
+.It Fl f
+Force the
+.Va $TERM
+type to be on
+.It Fl h , Fl \&?
+Print usage and exit
+.It Fl k
+Change characters while scrolling, cannot combine with
+.Fl o
+.It Fl l
+Linux mode, use matrix console font
+.It Fl L
+Lock mode, can be
+.Xr kill 1 Ns ed
+from another terminal
+.It Fl m
+Lambda mode, every character becomes a lambda
+.It Fl M Ar message
+Add centered
+.Ar message
+overriding
+.Fl L Ns Ap s
+default
+.It Fl n
+No bold characters, overrides
+.Fl b
+and
+.Fl B
+.It Fl o
+Use old-style scrolling
+.It Fl r
+Rainbow mode, rainbow colored characters
+.It Fl s
+Screensaver mode, exits on first keystroke
+.It Fl t Ar tty
+Set tty to use
+.It Fl u Ar delay
+.Sq Ar 4
+Screen update delay
+.Ar 0 Ns Pf - Ar 9
+.It Fl V
+Print version information and exit
+.It Fl x
+X window mode, use if your
+.Xr xterm 1
+is using mtx.pcf
+.El
+.Pp
+The following keystrokes are available during execution:
+.Pp
+.Bl -tag -width "! @ # $ % ^ & *" -compact
+.It Ic "! @ # $ % ^ & *"
+Switch scheme to corresponding
+.Ar color :
+.Pp
+.TS
+aw10 aw10.
+! red	@ green
+# yellow	$ blue
+% magenta	^ cyan
+& white	* black
+.TE
+.Pp
+.It Ic 0 Ns Pf - Ic 9
+Set update delay
+.It Ic a
+Toggle asynchronous scroll
+.It Ic b
+Random bold characters
+.It Ic B
+All bold characters
+.It Ic m
+Lambda mode
+.It Ic n
+Turn off bold characters
+.It Ic p , Ic P
+Pause
+.It Ic q
+Quit
+.It Ic r
+Rainbow mode
+.El
+.Sh EXAMPLES
+Interactive mode with asynchronous, partially-bold, red rain:
+.Dl $ cmatrix -ab -C red -u 2
+.Pp
+Interactive mode with asynchronous, partially-bold and Japanese rain:
+.Dl $ cmatrix -abc
+.Pp
+Screensaver mode emulating the classic from Windows/Mac:
+.Dl $ cmatrix -os
+.Pp
+Most realistic emulation of original movie:
+.Dl $ cmatrix -abcl
+.Sh SEE ALSO
+.Xr kill 1 ,
+.Xr xterm 1 ,
+.Xr ncurses 3
+.Pp
+.Lk http://www.github.com/abishekvashok/cmatrix Homepage
+.Sh HISTORY
+The
+.Nm
+utility was originally written by
+.An Chris Allegretta Aq Mt chrisa@asty.org
+for Linux in 1999.
+.Sh CAVEATS
+This is a fan made project, the Matrix movie is owned by completely
+unrelated trademark holders.
+.Sh BUGS
+The color black does not work.

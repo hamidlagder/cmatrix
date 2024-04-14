@@ -147,27 +147,27 @@ void c_die(char *msg, ...) {
 }
 
 void usage(void) {
-    printf(" Usage: cmatrix -[abBcfhlsmVxk] [-u delay] [-C color] [-t tty] [-M message]\n");
+    printf(" Usage: cmatrix [-\?abBcfhklLmnorsVx] [-C color] [-M message] [-t tty] [-u delay]\n");
     printf(" -a: Asynchronous scroll\n");
     printf(" -b: Bold characters on\n");
-    printf(" -B: All bold characters (overrides -b)\n");
-    printf(" -c: Use Japanese characters as seen in the original matrix. Requires appropriate fonts\n");
-    printf(" -f: Force the linux $TERM type to be on\n");
-    printf(" -l: Linux mode (uses matrix console font)\n");
-    printf(" -L: Lock mode (can be closed from another terminal)\n");
+    printf(" -B: All bold characters, overrides -b\n");
+    printf(" -c: Use Japanese characters, requires appropriate font\n");
+    printf(" -C [color]: \'green\' Use this color\n");
+    printf(" -f: Force the $TERM type to be on\n");
+    printf(" -h, \?: Print usage and exit\n");
+    printf(" -k: Change characters while scrolling, cannot combine with -o\n");
+    printf(" -l: Linux mode, use matrix console font\n");
+    printf(" -L: Lock mode, can be kill(1)ed from another terminal\n");
+    printf(" -m: Lambda mode, every character becomes a lambda\n");
+    printf(" -M [message]: Add centered message overriding -L's default\n");
+    printf(" -n: No bold characters, overrides -b and -B\n");
     printf(" -o: Use old-style scrolling\n");
-    printf(" -h: Print usage and exit\n");
-    printf(" -n: No bold characters (overrides -b and -B, default)\n");
-    printf(" -s: \"Screensaver\" mode, exits on first keystroke\n");
-    printf(" -x: X window mode, use if your xterm is using mtx.pcf\n");
-    printf(" -V: Print version information and exit\n");
-    printf(" -M [message]: Prints your message in the center of the screen. Overrides -L's default message.\n");
-    printf(" -u delay (0 - 10, default 4): Screen update delay\n");
-    printf(" -C [color]: Use this color for matrix (default green)\n");
-    printf(" -r: rainbow mode\n");
-    printf(" -m: lambda mode\n");
-    printf(" -k: Characters change while scrolling. (Works without -o opt.)\n");
+    printf(" -r: Rainbow mode, rainbow colored characters\n");
+    printf(" -s: Screensaver mode, exits on first keystroke\n");
     printf(" -t [tty]: Set tty to use\n");
+    printf(" -u [delay]: \'4\' Screen update delay 0-9\n");
+    printf(" -V: Print version information and exit\n");
+    printf(" -x: X window mode, use if your xterm(1) is using mtx.pcf\n");
 }
 
 void version(void) {
@@ -339,11 +339,8 @@ int main(int argc, char *argv[]) {
 
     /* Many thanks to morph- (morph@jmss.com) for this getopt patch */
     opterr = 0;
-    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:")) != EOF) {
+    while ((optchr = getopt(argc, argv, "?abBcfhklLmnorsVxC:M:t:u:")) != EOF) {
         switch (optchr) {
-        case 's':
-            screensaver = 1;
-            break;
         case 'a':
             asynch = 1;
             break;
@@ -354,6 +351,9 @@ int main(int argc, char *argv[]) {
             break;
         case 'B':
             bold = 2;
+            break;
+        case 'c':
+            classic = 1;
             break;
         case 'C':
             if (!strcasecmp(optarg, "green")) {
@@ -378,11 +378,17 @@ int main(int argc, char *argv[]) {
                        "white, yellow, cyan, magenta " "and black.\n");
             }
             break;
-        case 'c':
-            classic = 1;
-            break;
         case 'f':
             force = 1;
+            break;
+        case 'h':
+        case '?':
+            usage();
+            exit(0);
+            oldstyle = 1;
+            break;
+        case 'k':
+            changes = 1;
             break;
         case 'l':
             console = 1;
@@ -394,39 +400,33 @@ int main(int argc, char *argv[]) {
                 msg = "Computer locked.";
             }
             break;
+        case 'm':
+            lambda = 1;
+            break;
         case 'M':
             msg = strdup(optarg);
             break;
         case 'n':
             bold = -1;
             break;
-        case 'h':
-        case '?':
-            usage();
-            exit(0);
         case 'o':
-            oldstyle = 1;
+        case 'r':
+            rainbow = 1;
+            break;
+        case 's':
+            screensaver = 1;
+            break;
+        case 't':
+            tty = optarg;
             break;
         case 'u':
             update = atoi(optarg);
             break;
-        case 'x':
-            xwindow = 1;
-            break;
         case 'V':
             version();
             exit(0);
-        case 'r':
-            rainbow = 1;
-            break;
-        case 'm':
-            lambda = 1;
-            break;
-        case 'k':
-            changes = 1;
-            break;
-        case 't':
-            tty = optarg;
+        case 'x':
+            xwindow = 1;
             break;
         }
     }
@@ -584,37 +584,6 @@ if (console) {
 #ifdef _WIN32
                 case 3: /* Ctrl-C. Fall through */
 #endif
-                case 'q':
-                    if (lock != 1)
-                        finish();
-                    break;
-                case 'a':
-                    asynch = 1 - asynch;
-                    break;
-                case 'b':
-                    bold = 1;
-                    break;
-                case 'B':
-                    bold = 2;
-                    break;
-                case 'L':
-                    lock = 1;
-                    break;
-                case 'n':
-                    bold = 0;
-                    break;
-                case '0': /* Fall through */
-                case '1': /* Fall through */
-                case '2': /* Fall through */
-                case '3': /* Fall through */
-                case '4': /* Fall through */
-                case '5': /* Fall through */
-                case '6': /* Fall through */
-                case '7': /* Fall through */
-                case '8': /* Fall through */
-                case '9':
-                    update = keypress - 48;
-                    break;
                 case '!':
                     mcolor = COLOR_RED;
                     rainbow = 0;
@@ -635,12 +604,6 @@ if (console) {
                     mcolor = COLOR_MAGENTA;
                     rainbow = 0;
                     break;
-                case 'r':
-                     rainbow = 1;
-                     break;
-                case 'm':
-                     lambda = !lambda;
-                     break;
                 case '^':
                     mcolor = COLOR_CYAN;
                     rainbow = 0;
@@ -649,10 +612,51 @@ if (console) {
                     mcolor = COLOR_WHITE;
                     rainbow = 0;
                     break;
+		case '*':
+		    mcolor = COLOR_BLACK;
+		    rainbow = 0;
+		    break;
+                case '0': /* Fall through */
+                case '1': /* Fall through */
+                case '2': /* Fall through */
+                case '3': /* Fall through */
+                case '4': /* Fall through */
+                case '5': /* Fall through */
+                case '6': /* Fall through */
+                case '7': /* Fall through */
+                case '8': /* Fall through */
+                case '9':
+                    update = keypress - 48;
+                    break;
+                case 'a':
+                    asynch = 1 - asynch;
+                    break;
+                case 'b':
+                    bold = 1;
+                    break;
+                case 'B':
+                    bold = 2;
+                    break;
+                case 'L':
+                    lock = 1;
+                    break;
+                case 'm':
+                     lambda = !lambda;
+                     break;
+                case 'n':
+                    bold = 0;
+                    break;
                 case 'p':
                 case 'P':
                     pause = (pause == 0)?1:0;
                     break;
+                case 'q':
+                    if (lock != 1)
+                        finish();
+                    break;
+                case 'r':
+                     rainbow = 1;
+                     break;
 
                 }
             }
