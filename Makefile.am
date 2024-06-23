@@ -26,6 +26,11 @@ install-data-local:
 	    		$(INSTALL_DATA) $(srcdir)/matrix.fnt $(DESTDIR)/usr/lib/kbd/consolefonts; \
 	    		$(INSTALL_DATA) $(srcdir)/matrix.psf.gz $(DESTDIR)/usr/lib/kbd/consolefonts; \
 		fi; \
+		if test -d /usr/share/kbd/consolefonts; then \
+	    		echo " Installing matrix fonts in /usr/share/kbd/consolefonts..."; \
+	    		$(INSTALL_DATA) $(srcdir)/matrix.fnt $(DESTDIR)/usr/share/kbd/consolefonts; \
+	    		$(INSTALL_DATA) $(srcdir)/matrix.psf.gz $(DESTDIR)/usr/share/kbd/consolefonts; \
+		fi; \
 		if test -d /usr/share/fonts/misc; then \
 	    		echo " Installing X window matrix fonts in /usr/share/fonts/misc..."; \
 	    		echo " Running mkfontdir /usr/share/fonts/misc..."; \

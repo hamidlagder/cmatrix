@@ -47,6 +47,9 @@
 #include <getopt.h>
 #endif
 
+#ifdef HAVE_NCURSESW
+#include <ncursesw/curses.h>
+#else
 #ifdef HAVE_NCURSES_H
 #include <ncurses.h>
 #else
@@ -56,7 +59,7 @@
 #include <curses.h>
 #endif
 #endif
-
+#endif
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif

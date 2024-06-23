@@ -19,9 +19,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-dnl Checks for libraries.
-dnl Replace `main' with a function in -lncurses:
-AC_CHECK_LIB(ncurses, main)
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -34,8 +31,14 @@ AC_CHECK_FUNCS(putenv)
 dnl Checks for libraries.
 AC_CHECK_HEADERS(curses.h ncurses.h)
 
+
 CURSES_LIB_NAME=""
-AC_CHECK_LIB(ncurses, tgetent, CURSES_LIB="-lncurses" CURSES_LIB_NAME=ncurses)
+AC_CHECK_LIB(ncursesw, tgetent, CURSES_LIB="-lncursesw" CURSES_LIB_NAME=ncursesw)
+
+if eval "test x$CURSES_LIB_NAME = x"
+then
+    AC_CHECK_LIB(ncurses, tgetent, CURSES_LIB="-lncurses" CURSES_LIB_NAME=ncurses)
+fi
 
 if eval "test x$CURSES_LIB_NAME = x"
 then
@@ -49,7 +52,7 @@ fi
 
 if eval "test x$CURSES_LIB_NAME = x"
 then
-    AC_CHECK_LIB(termcap, tgetent, CURSES_LIB="-ltermcap" CURSES_LIB_NAME=termcap)
+    AC_CHECK_LIB(termcap, tgetent, CURSES_LIB="-ltermcap" CURSES_LIB_NAME=termcap)q
 fi
 
 if eval "test x$CURSES_LIB_NAME = x"
@@ -65,13 +68,16 @@ then
 *** errors compiling cmatrix.])
 else
     AC_MSG_RESULT("Using $CURSES_LIB_NAME as the termcap library")
+    if eval "test $CURSES_LIB_NAME = ncursesw"
+    then
+        AC_CHECK_LIB([$CURSES_LIB_NAME], addwstr, [AC_DEFINE(HAVE_NCURSESW)])
+    fi
 fi
 
 AC_CHECK_LIB($CURSES_LIB_NAME, use_default_colors,
 	 AC_DEFINE(HAVE_USE_DEFAULT_COLORS))
 AC_CHECK_LIB($CURSES_LIB_NAME, resizeterm, [AC_DEFINE(HAVE_RESIZETERM)])
 AC_CHECK_LIB([$CURSES_LIB_NAME], wresize, [AC_DEFINE(HAVE_WRESIZE)])
-
 
 dnl Only change gcc options if we are using gcc.
 if test "$ac_cv_prog_CC" = gcc -o "$ac_cv_prog_CC" = g++; then
@@ -115,10 +121,11 @@ if test "x$enable_fonts" != xfalse; then
        if test x$SETFONT != x -o x$SETFONT != x'"$SETFONT"'; then
 
 	  dnl Now look for the console fonts directory
-	  AC_CHECK_FILES([/usr/lib/kbd/consolefonts /usr/share/consolefonts])
+	  AC_CHECK_FILES([/usr/lib/kbd/consolefonts /usr/share/consolefonts /usr/share/kbd/consolefonts])
 
 	  if test "x$ac_cv_file__usr_lib_kbd_consolefonts" = "xno"; then
 	      if test "x$ac_cv_file__usr_share_consolefonts" = "xno"; then
+	          if test "x$ac_cv_file__usr_share_kbd_consolefonts" = "xno"; then
 		  AC_MSG_WARN([
 
 *** You do not appear to have a consolefonts directory in a standard location
@@ -128,6 +135,7 @@ if test "x$enable_fonts" != xfalse; then
 *** matrix console font (and the -l command line switch) unless the font
 *** is located in your current directory when you run CMatrix.
 ])
+            fi
 	      fi
 	  fi
        fi
@@ -168,5 +176,6 @@ AH_TEMPLATE([HAVE_SETFONT], [Define this if you have the linux setfont program])
 AH_TEMPLATE([HAVE_WRESIZE], [Define this if you have the wresize function in your ncurses-type library])
 AH_TEMPLATE([HAVE_RESIZETERM], [Define this if you have the resizeterm function in your ncurses-type library])
 AH_TEMPLATE([USE_TIOCSTI], [Define this if you want a character you pressed in the screensaver mode to retain in the terminal])
+AH_TEMPLATE([HAVE_NCURSESW], [Define this if you have the ncursesw library])
 
 AC_OUTPUT(Makefile cmatrix.spec)
