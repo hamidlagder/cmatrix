@@ -52,7 +52,7 @@ fi
 
 if eval "test x$CURSES_LIB_NAME = x"
 then
-    AC_CHECK_LIB(termcap, tgetent, CURSES_LIB="-ltermcap" CURSES_LIB_NAME=termcap)q
+    AC_CHECK_LIB(termcap, tgetent, CURSES_LIB="-ltermcap" CURSES_LIB_NAME=termcap)
 fi
 
 if eval "test x$CURSES_LIB_NAME = x"
