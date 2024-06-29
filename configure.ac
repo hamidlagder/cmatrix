@@ -21,11 +21,11 @@ AC_PROG_MAKE_SET
 
 
 dnl Checks for header files.
-AC_HEADER_STDC
+AC_PROG_EGREP
 AC_CHECK_HEADERS(fcntl.h sys/ioctl.h unistd.h termios.h termio.h getopt.h)
 
 dnl Checks for library functions.
-AC_DIAGNOSE([obsolete],[your code may safely assume C89 semantics that RETSIGTYPE is void.
+m4_warn([obsolete],[your code may safely assume C89 semantics that RETSIGTYPE is void.
 Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
 AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
 [AC_LANG_PROGRAM([#include <sys/types.h>
