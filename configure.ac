@@ -189,7 +189,7 @@ fi
 
 dnl Parse any configure options
 
-LIBS="$LIBS $CURSES_LIB"
+LIBS="$LIBS $CURSES_LIB $TERMCAP_LIB"
 AC_ARG_ENABLE(debug, [  --enable-debug          Enable debugging (def disabled)],)
 AM_CONDITIONAL([MATRIX_FONTS], [test x$enable_fonts = xtrue])
 
