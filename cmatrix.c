@@ -105,7 +105,7 @@ int va_system(char *str, ...) {
 }
 
 /* What we do when we're all set to exit */
-void finish(void) {
+void finish(int can_exit) {
     curs_set(1);
     clear();
     refresh();
@@ -118,7 +118,8 @@ void finish(void) {
         va_system("setfont");
 #endif
     }
-    exit(0);
+    if (can_exit)
+        exit(EXIT_SUCCESS);
 }
 
 /* What we do when we're all set to exit */
@@ -126,24 +127,13 @@ void c_die(char *msg, ...) {
 
     va_list ap;
 
-    curs_set(1);
-    clear();
-    refresh();
-    resetty();
-    endwin();
-
-    if (console) {
-#ifdef HAVE_CONSOLECHARS
-        va_system("consolechars -d");
-#elif defined(HAVE_SETFONT)
-        va_system("setfont");
-#endif
-    }
+    finish(0);
 
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     va_end(ap);
-    exit(0);
+
+    exit(EXIT_FAILURE);
 }
 
 void usage(void) {
@@ -403,7 +393,7 @@ int main(int argc, char *argv[]) {
         case 'h':
         case '?':
             usage();
-            exit(0);
+            exit(EXIT_SUCCESS);
         case 'o':
             oldstyle = 1;
             break;
@@ -415,7 +405,7 @@ int main(int argc, char *argv[]) {
             break;
         case 'V':
             version();
-            exit(0);
+            exit(EXIT_SUCCESS);
         case 'r':
             rainbow = 1;
             break;
@@ -545,7 +535,7 @@ if (console) {
         /* Check for signals */
         if (signal_status == SIGINT || signal_status == SIGQUIT) {
             if (lock != 1)
-                finish();
+                finish(1);
             /* exits */
         }
         if (signal_status == SIGWINCH) {
@@ -555,7 +545,7 @@ if (console) {
 
         if (signal_status == SIGTSTP) {
             if (lock != 1)
-                    finish();
+                    finish(1);
         }
 #endif
 
@@ -578,7 +568,7 @@ if (console) {
                     ioctl(STDIN_FILENO, TIOCSTI, (char*)(str + i));
                 free(str);
 #endif
-                finish();
+                finish(1);
             } else {
                 switch (keypress) {
 #ifdef _WIN32
@@ -586,7 +576,7 @@ if (console) {
 #endif
                 case 'q':
                     if (lock != 1)
-                        finish();
+                        finish(1);
                     break;
                 case 'a':
                     asynch = 1 - asynch;
@@ -890,5 +880,5 @@ if (console) {
 
         napms(update * 10);
     }
-    finish();
+    finish(1);
 }
