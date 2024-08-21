@@ -393,7 +393,7 @@ int main(int argc, char *argv[]) {
         case 'h':
         case '?':
             usage();
-            exit(0);
+            exit(EXIT_SUCCESS);
         case 'o':
             oldstyle = 1;
             break;
@@ -405,7 +405,7 @@ int main(int argc, char *argv[]) {
             break;
         case 'V':
             version();
-            exit(0);
+            exit(EXIT_SUCCESS);
         case 'r':
             rainbow = 1;
             break;
