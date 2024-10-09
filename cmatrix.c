@@ -17,10 +17,13 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Foobar. If not, see <http://www.gnu.org/licenses/>.
+    along with cmatrix. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#define NCURSES_WIDECHAR 1
+
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -29,18 +32,29 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <termios.h>
 #include <signal.h>
 #include <locale.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 #ifndef EXCLUDE_CONFIG_H
 #include "config.h"
 #endif
 
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+
 #ifdef HAVE_NCURSES_H
 #include <ncurses.h>
 #else
+#ifdef _WIN32
+#include <ncurses/curses.h>
+#else
 #include <curses.h>
+#endif
 #endif
 
 #ifdef HAVE_SYS_IOCTL_H
@@ -57,6 +71,10 @@
 #include <termio.h>
 #endif
 
+#ifdef __CYGWIN__
+#define TIOCSTI 0x5412
+#endif
+
 /* Matrix typedef */
 typedef struct cmatrix {
     int val;
@@ -71,7 +89,14 @@ cmatrix **matrix = (cmatrix **) NULL;
 int *length = NULL;  /* Length of cols in each line */
 int *spaces = NULL;  /* Spaces left to fill */
 int *updates = NULL; /* What does this do again? */
+//<<<<<<< wordwiz
+int counter = 0;
+
+//=======
+//>>>>>>> stable
+#ifndef _WIN32
 volatile sig_atomic_t signal_status = 0; /* Indicates a caught signal */
+#endif
 
 int va_system(char *str, ...) {
 
@@ -127,7 +152,7 @@ void c_die(char *msg, ...) {
 }
 
 void usage(void) {
-    printf(" Usage: cmatrix -[abBcfhlsmVx] [-u delay] [-C color]\n");
+    printf(" Usage: cmatrix -[abBcfhlsmVxk] [-u delay] [-C color] [-t tty] [-M message]\n");
     printf(" -a: Asynchronous scroll\n");
     printf(" -b: Bold characters on\n");
     printf(" -B: All bold characters (overrides -b)\n");
@@ -141,10 +166,18 @@ void usage(void) {
     printf(" -s: \"Screensaver\" mode, exits on first keystroke\n");
     printf(" -x: X window mode, use if your xterm is using mtx.pcf\n");
     printf(" -V: Print version information and exit\n");
+    printf(" -M [message]: Prints your message in the center of the screen. Overrides -L's default message.\n");
     printf(" -u delay (0 - 10, default 4): Screen update delay\n");
     printf(" -C [color]: Use this color for matrix (default green)\n");
     printf(" -r: rainbow mode\n");
     printf(" -m: lambda mode\n");
+    printf(" -k: Characters change while scrolling. (Works without -o opt.)\n");
+    printf(" -t [tty]: Set tty to use\n");
+//<<<<<<< wordwiz
+    printf(" -w wordify");
+    
+//=======
+//>>>>>>> stable
 }
 
 void version(void) {
@@ -219,11 +252,22 @@ void var_init() {
 
 }
 
+#ifndef _WIN32
 void sighandler(int s) {
     signal_status = s;
 }
+#endif
 
 void resize_screen(void) {
+#ifdef _WIN32
+    BOOL result;
+    HANDLE hStdHandle;
+    CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+
+    hStdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hStdHandle == INVALID_HANDLE_VALUE)
+        return;
+#else
     char *tty;
     int fd = 0;
     int result = 0;
@@ -232,6 +276,14 @@ void resize_screen(void) {
     tty = ttyname(0);
     if (!tty) {
         return;
+#endif
+#ifdef _WIN32
+    result = GetConsoleScreenBufferInfo(hStdHandle, &csbiInfo);
+    if (!result)
+        return;
+    LINES = csbiInfo.dwSize.Y;
+    COLS = csbiInfo.dwSize.X;
+#else
     }
     fd = open(tty, O_RDWR);
     if (fd == -1) {
@@ -244,11 +296,12 @@ void resize_screen(void) {
 
     COLS = win.ws_col;
     LINES = win.ws_row;
+#endif
 
-    if(LINES <10){
+    if (LINES < 10) {
         LINES = 10;
     }
-    if(COLS <10){
+    if (COLS < 10) {
         COLS = 10;
     }
 
@@ -287,13 +340,20 @@ int main(int argc, char *argv[]) {
     int randmin = 0;
     int pause = 0;
     int classic = 0;
+    int changes = 0;
+    char *msg = "";
+    char *tty = NULL;
 
     srand((unsigned) time(NULL));
     setlocale(LC_ALL, "");
 
     /* Many thanks to morph- (morph@jmss.com) for this getopt patch */
     opterr = 0;
-    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxVu:C:")) != EOF) {
+//<<<<<<< wordwiz
+    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:w:")) != EOF) {
+//=======
+//    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:")) != EOF) {
+//>>>>>>> stable
         switch (optchr) {
         case 's':
             screensaver = 1;
@@ -343,6 +403,13 @@ int main(int argc, char *argv[]) {
             break;
         case 'L':
             lock = 1;
+            //if -M was used earlier, don't override it
+            if (0 == strncmp(msg, "", 1)) {
+                msg = "Computer locked.";
+            }
+            break;
+        case 'M':
+            msg = strdup(optarg);
             break;
         case 'n':
             bold = -1;
@@ -364,30 +431,70 @@ int main(int argc, char *argv[]) {
             version();
             exit(0);
         case 'r':
-             rainbow = 1;
-             break;
+            rainbow = 1;
+            break;
         case 'm':
-             lambda = 1;
-             break;
+            lambda = 1;
+            break;
+        case 'k':
+            changes = 1;
+            break;
+        case 't':
+            tty = optarg;
+            break;
+//<<<<<<< wordwiz
+        case 'w':
+			msg = strdup(optarg);
+			break;
+//=======
+//>>>>>>> stable
         }
     }
 
+    /* Clear TERM variable on Windows */
+#ifdef _WIN32
+    _putenv_s("TERM", "");
+#endif
+
     if (force && strcmp("linux", getenv("TERM"))) {
+#ifdef _WIN32
+        SetEnvironmentVariableW(L"TERM", L"linux");
+#else
         /* setenv is much more safe to use than putenv */
         setenv("TERM", "linux", 1);
+#endif
     }
-    initscr();
+    if (tty) {
+        FILE *ftty = fopen(tty, "r+");
+        if (!ftty) {
+            fprintf(stderr, "cmatrix: error: '%s' couldn't be opened: %s.\n",
+                    tty, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        SCREEN *ttyscr;
+        ttyscr = newterm(NULL, ftty, ftty);
+        if (ttyscr == NULL)
+            exit(EXIT_FAILURE);
+        set_term(ttyscr);
+    } else
+        initscr();
     savetty();
     nonl();
+#ifdef _WIN32
+    raw();
+#else
     cbreak();
+#endif
     noecho();
     timeout(0);
     leaveok(stdscr, TRUE);
     curs_set(0);
+#ifndef _WIN32
     signal(SIGINT, sighandler);
     signal(SIGQUIT, sighandler);
     signal(SIGWINCH, sighandler);
     signal(SIGTSTP, sighandler);
+#endif
 
 if (console) {
 #ifdef HAVE_CONSOLECHARS
@@ -421,7 +528,7 @@ if (console) {
             init_pair(COLOR_YELLOW, COLOR_YELLOW, -1);
         } else {
 #else
-        { /* Hack to deal the after effects of else in HAVE_USE_DEFAULT_COLOURS*/
+        { /* Hack to deal the after effects of else in HAVE_USE_DEFAULT_COLOURS */
 #endif
             init_pair(COLOR_BLACK, COLOR_BLACK, COLOR_BLACK);
             init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK);
@@ -435,10 +542,13 @@ if (console) {
     }
 
     /* Set up values for random number generation */
-    if(classic) {
-        /* Japanese character unicode range [they are seen in the original cmatrix] */
-        randmin = 12288;
-        highnum = 12351;
+    if (classic) {
+        /* Half-width kana characters. In the movie they are y-axis flipped, and
+         * they appear alongside latin characters and numerals, but this is the
+         * closest we can do with a standard unicode set and a single number
+         * range */
+        randmin = 0xff66;
+        highnum = 0xff9d;
     } else if (console || xwindow) {
         randmin = 166;
         highnum = 217;
@@ -451,9 +561,10 @@ if (console) {
     var_init();
 
     while (1) {
+#ifndef _WIN32
         /* Check for signals */
         if (signal_status == SIGINT || signal_status == SIGQUIT) {
-            if(lock != 1)
+            if (lock != 1)
                 finish();
             /* exits */
         }
@@ -462,10 +573,11 @@ if (console) {
             signal_status = 0;
         }
 
-        if(signal_status == SIGTSTP){
-            if(lock != 1)
+        if (signal_status == SIGTSTP) {
+            if (lock != 1)
                     finish();
         }
+#endif
 
         count++;
         if (count > 4) {
@@ -489,8 +601,11 @@ if (console) {
                 finish();
             } else {
                 switch (keypress) {
+#ifdef _WIN32
+                case 3: /* Ctrl-C. Fall through */
+#endif
                 case 'q':
-                    if(lock != 1)
+                    if (lock != 1)
                         finish();
                     break;
                 case 'a':
@@ -565,7 +680,7 @@ if (console) {
         for (j = 0; j <= COLS - 1; j += 2) {
             if ((count > updates[j] || asynch == 0) && pause == 0) {
 
-                /* I dont like old-style scrolling, yuck */
+                /* I don't like old-style scrolling, yuck */
                 if (oldstyle) {
                     for (i = LINES - 1; i >= 1; i--) {
                         matrix[i][j].val = matrix[i - 1][j].val;
@@ -581,7 +696,7 @@ if (console) {
                             spaces[j]--;
                         } else {
 
-                            /* Random number to determine whether head of next collumn
+                            /* Random number to determine whether head of next column
                                of chars has a white 'head' on it. */
 
                             if (((int) rand() % 3) == 1) {
@@ -600,13 +715,15 @@ if (console) {
                 } else { /* New style scrolling (default) */
                     if (matrix[0][j].val == -1 && matrix[1][j].val == ' '
                         && spaces[j] > 0) {
-                        matrix[0][j].val = -1;
                         spaces[j]--;
                     } else if (matrix[0][j].val == -1
                         && matrix[1][j].val == ' ') {
                         length[j] = (int) rand() % (LINES - 3) + 3;
+                        if (msg) {
+							matrix[0][j].val = msg[j];
+							} else {
                         matrix[0][j].val = (int) rand() % randnum + randmin;
-
+							}
                         spaces[j] = (int) rand() % LINES + 1;
                     }
                     i = 0;
@@ -624,12 +741,25 @@ if (console) {
                             break;
                         }
 
-                        /* Go to the head of this collumn */
+                        /* Go to the head of this column */
                         z = i;
                         y = 0;
                         while (i <= LINES && (matrix[i][j].val != ' ' &&
                                matrix[i][j].val != -1)) {
                             matrix[i][j].is_head = false;
+                            if (changes) {
+//<<<<<<< wordwiz
+								
+								if (msg){
+									matrix[i][j].val = msg[j];
+									} else { if (rand() % 8 == 0)
+                                    matrix[i][j].val = (int) rand() % randnum + randmin;
+                                    }
+//=======
+ //                               if (rand() % 8 == 0)
+ //                                   matrix[i][j].val = (int) rand() % randnum + randmin;
+//>>>>>>> stable
+                            }
                             i++;
                             y++;
                         }
@@ -638,19 +768,44 @@ if (console) {
                             matrix[z][j].val = ' ';
                             continue;
                         }
-
+						// This is the area to edit after getting getopt better
+						if (counter <= strlen(msg)){
+                        matrix[i][j].val = msg[counter];
+                        
+                       // break;
+						//counter = counter + 1;
+						}
+//						if (counter == strlen(msg){
+//							counter = 0;
+//							}
+						
+						else
+						{
                         matrix[i][j].val = (int) rand() % randnum + randmin;
+						}
+                        //matrix[i][j].val = msg[i];
                         matrix[i][j].is_head = true;
-
-                        /* If we're at the top of the collumn and it's reached its
+//<<<<<<< wordwiz
+						//counter = counter + 1;
+						if (counter > strlen(msg))
+						{
+							counter = 0; 
+							}
+							
+//=======
+//
+//>>>>>>> stable
+                        /* If we're at the top of the column and it's reached its
                            full length (about to start moving down), we do this
                            to get it moving.  This is also how we keep segments not
                            already growing from growing accidentally =>
                          */
+                        
                         if (y > length[j] || firstcoldone) {
                             matrix[z][j].val = ' ';
                             matrix[0][j].val = -1;
                         }
+                        counter = counter + 1;
                         firstcoldone = 1;
                         i++;
                     }
@@ -667,7 +822,7 @@ if (console) {
             for (i = y; i <= z; i++) {
                 move(i - y, j);
 
-                if (matrix[i][j].is_head && !rainbow) {
+                if (matrix[i][j].val == 0 || (matrix[i][j].is_head && !rainbow)) {
                     if (console || xwindow) {
                         attron(A_ALTCHARSET);
                     }
@@ -681,6 +836,8 @@ if (console) {
                         } else {
                             addch('&');
                         }
+                    } else if (matrix[i][j].val == -1) {
+                        addch(' ');
                     } else {
                         addch(matrix[i][j].val);
                     }
@@ -693,10 +850,10 @@ if (console) {
                         attroff(A_ALTCHARSET);
                     }
                 } else {
-                    if(rainbow) {
+                    if (rainbow) {
                         int randomColor = rand() % 6;
 
-                        switch(randomColor){
+                        switch (randomColor) {
                             case 0:
                                 mcolor = COLOR_GREEN;
                                 break;
@@ -739,7 +896,15 @@ if (console) {
                         } else if (lambda && matrix[i][j].val != ' ') {
                             addstr("λ");
                         } else {
-                            addch(matrix[i][j].val);
+                            /* addch doesn't seem to work with unicode
+                             * characters and there was no direct equivalent.
+                             * So, construct a c-style string with the character
+                             * and print that.
+                             */
+                            wchar_t char_array[2];
+                            char_array[0] = matrix[i][j].val;
+                            char_array[1] = 0;
+                            addwstr(char_array);
                         }
                         if (bold == 2 ||
                             (bold == 1 && matrix[i][j].val % 2 == 0)) {
@@ -754,31 +919,30 @@ if (console) {
             }
         }
 
-        //Check if computer is locked
-        if(lock == 1){
-
+        //check if -M and/or -L was used
+        if (msg[0] != '\0') {
             //Add our message to the screen
-            char *msg = "Computer locked.";
             int msg_x = LINES/2;
             int msg_y = COLS/2 - strlen(msg)/2;
             int i = 0;
 
             //Add space before message
             move(msg_x-1, msg_y-2);
-            for(i = 0; i < strlen(msg)+4; i++)
+            for (i = 0; i < strlen(msg)+4; i++)
                 addch(' ');
-
+			
+			//temporarily turning this off
             //Write message
-            move(msg_x, msg_y-2);
-            addch(' ');
-            addch(' ');
-            addstr(msg);
-            addch(' ');
-            addch(' ');
+            //move(msg_x, msg_y-2);
+            //addch(' ');
+            //addch(' ');
+            //addstr(msg);
+            //addch(' ');
+            //addch(' ');
 
             //Add space after message
             move(msg_x+1, msg_y-2);
-            for(i = 0; i < strlen(msg)+4; i++)
+            for (i = 0; i < strlen(msg)+4; i++)
                 addch(' ');
         }
 
@@ -786,4 +950,3 @@ if (console) {
     }
     finish();
 }
-
