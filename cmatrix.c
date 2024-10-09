@@ -89,8 +89,11 @@ cmatrix **matrix = (cmatrix **) NULL;
 int *length = NULL;  /* Length of cols in each line */
 int *spaces = NULL;  /* Spaces left to fill */
 int *updates = NULL; /* What does this do again? */
+//<<<<<<< wordwiz
 int counter = 0;
 
+//=======
+//>>>>>>> stable
 #ifndef _WIN32
 volatile sig_atomic_t signal_status = 0; /* Indicates a caught signal */
 #endif
@@ -170,8 +173,11 @@ void usage(void) {
     printf(" -m: lambda mode\n");
     printf(" -k: Characters change while scrolling. (Works without -o opt.)\n");
     printf(" -t [tty]: Set tty to use\n");
+//<<<<<<< wordwiz
     printf(" -w wordify");
     
+//=======
+//>>>>>>> stable
 }
 
 void version(void) {
@@ -343,7 +349,11 @@ int main(int argc, char *argv[]) {
 
     /* Many thanks to morph- (morph@jmss.com) for this getopt patch */
     opterr = 0;
+//<<<<<<< wordwiz
     while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:w:")) != EOF) {
+//=======
+//    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:")) != EOF) {
+//>>>>>>> stable
         switch (optchr) {
         case 's':
             screensaver = 1;
@@ -432,9 +442,12 @@ int main(int argc, char *argv[]) {
         case 't':
             tty = optarg;
             break;
+//<<<<<<< wordwiz
         case 'w':
 			msg = strdup(optarg);
 			break;
+//=======
+//>>>>>>> stable
         }
     }
 
@@ -735,12 +748,17 @@ if (console) {
                                matrix[i][j].val != -1)) {
                             matrix[i][j].is_head = false;
                             if (changes) {
+//<<<<<<< wordwiz
 								
 								if (msg){
 									matrix[i][j].val = msg[j];
 									} else { if (rand() % 8 == 0)
                                     matrix[i][j].val = (int) rand() % randnum + randmin;
                                     }
+//=======
+ //                               if (rand() % 8 == 0)
+ //                                   matrix[i][j].val = (int) rand() % randnum + randmin;
+//>>>>>>> stable
                             }
                             i++;
                             y++;
@@ -767,12 +785,16 @@ if (console) {
 						}
                         //matrix[i][j].val = msg[i];
                         matrix[i][j].is_head = true;
+//<<<<<<< wordwiz
 						//counter = counter + 1;
 						if (counter > strlen(msg))
 						{
 							counter = 0; 
 							}
 							
+//=======
+//
+//>>>>>>> stable
                         /* If we're at the top of the column and it's reached its
                            full length (about to start moving down), we do this
                            to get it moving.  This is also how we keep segments not
