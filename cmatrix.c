@@ -455,8 +455,8 @@ int main(int argc, char *argv[]) {
         setenv("TERM", "linux", 1);
 #endif
     }
-    if (highnum - randmin<1) {
-        fprintf(stderr, "%d is not enough letters between Minimum and Maximum unicode.\n", highnum - randmin);
+    if ((userrandmin!=33 || userhighnum!=123) && (userhighnum - userrandmin<1)) {
+        fprintf(stderr, "%d is not enough letters between Minimum and Maximum unicode.\n", userhighnum - userrandmin);
         exit(EXIT_FAILURE);
     }
     if (tty) {
