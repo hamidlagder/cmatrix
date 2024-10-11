@@ -168,6 +168,8 @@ void usage(void) {
     printf(" -m: lambda mode\n");
     printf(" -k: Characters change while scrolling. (Works without -o opt.)\n");
     printf(" -t [tty]: Set tty to use\n");
+    printf(" -A [Unicode]: Set minimum Unicode (use 0x16A0 for runes)\n");
+    printf(" -Z [Unicode]: Set maximum Unicode (0x16FF for runes)\n");
 }
 
 void version(void) {
@@ -333,13 +335,15 @@ int main(int argc, char *argv[]) {
     int changes = 0;
     char *msg = "";
     char *tty = NULL;
+    int userrandmin = 33;
+    int userhighnum = 123;
 
     srand((unsigned) time(NULL));
     setlocale(LC_ALL, "");
 
     /* Many thanks to morph- (morph@jmss.com) for this getopt patch */
     opterr = 0;
-    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:")) != EOF) {
+    while ((optchr = getopt(argc, argv, "abBcfhlLnrosmxkVM:u:C:t:A:Z:")) != EOF) {
         switch (optchr) {
         case 's':
             screensaver = 1;
@@ -354,6 +358,13 @@ int main(int argc, char *argv[]) {
             break;
         case 'B':
             bold = 2;
+            break;
+       case 'A':
+            if (optarg)
+            userrandmin = (int)strtol(optarg, NULL, 16);
+            break;
+        case 'Z':
+            userhighnum = (int)strtol(optarg, NULL, 16);
             break;
         case 'C':
             if (!strcasecmp(optarg, "green")) {
@@ -444,6 +455,10 @@ int main(int argc, char *argv[]) {
         setenv("TERM", "linux", 1);
 #endif
     }
+    if (highnum - randmin<1) {
+        fprintf(stderr, "%d is not enough letters between Minimum and Maximum unicode.\n", highnum - randmin);
+        exit(EXIT_FAILURE);
+    }
     if (tty) {
         FILE *ftty = fopen(tty, "r+");
         if (!ftty) {
@@ -532,6 +547,9 @@ if (console) {
     } else if (console || xwindow) {
         randmin = 166;
         highnum = 217;
+    } else if (userrandmin!=33 || userhighnum!=123) {
+        randmin = userrandmin;
+        highnum = userhighnum;
     } else {
         randmin = 33;
         highnum = 123;
